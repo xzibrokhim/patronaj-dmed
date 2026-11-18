@@ -71,3 +71,12 @@ Run automated tests:
 cd backend
 python -m unittest test_live_server.py -v
 ```
+
+## Task #10 demo components
+
+- [Patronage dashboard](web/README.md) — nurse tablet UI with an IndexedDB queue and a standalone FastAPI demo. On Windows, run `web/start-web.bat` and open `http://127.0.0.1:8000`. Stop the hardware bridge first if it is using port 8000.
+- [Offline AI and sync demo](offline_ai/README.md) — local Uzbek speech and triage, an offline tablet page, and a local test receiver with a receipt journal. To try the tablet without model downloads, run `python offline_ai/patronage_demo.py --open` and use the synthetic visit. The AI setup guide explains how to prepare the local model runtime. The hardware bridge can call it at `http://127.0.0.1:8001/analyze`.
+- [Doctor Telegram bot](telegram_bot/README.md) — for the standalone web demo, set the same `TELEGRAM_BOT_TOKEN`, `DOCTOR_USER_ID` and `INTERNAL_API_KEY` in `web/.env` and `telegram_bot/.env` before starting both services. Use synthetic demo data.
+- [ESP32-S3 OLED firmware](hardware/ai_patronaj_oled/ai_patronaj_oled.ino) — an alternate sketch with OLED, buzzer and a physical start button.
+
+The local receiver demonstrates offline delivery. Live DHP synchronization requires sandbox credentials and a synthetic patient. The code is a hackathon prototype.

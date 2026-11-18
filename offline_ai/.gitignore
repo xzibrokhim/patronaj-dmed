@@ -1,0 +1,9 @@
+# Project-local GSD installation contains paths specific to this computer.
+/.codex/
+/.runtime/
+/.venv/
+/dist/
+__pycache__/
+.pytest_cache/
+pytest-cache-files-*/
+/demo-results/

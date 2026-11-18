@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="uz-Latn">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#f5f6f0">
+  <title>Patronaj plansheti</title>
+  <link rel="stylesheet" href="/assets/style.css">
+  <script src="/assets/app.js" defer></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="frame topbar-inner">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true"></span>
+        <span>Patronaj plansheti</span>
+      </div>
+      <span class="session-label">Xakaton · Sinov muhiti</span>
+    </div>
+  </header>
+  <main class="frame">
+    <section class="connection" aria-label="Aloqa holati">
+      <div class="connection-copy">
+        <span class="signal" id="signal" aria-hidden="true"></span>
+        <div>
+          <strong id="connection-status" role="status">Aloqa tekshirilmoqda</strong>
+          <p id="connection-detail">Tashriflar shu qurilmada saqlanadi.</p>
+        </div>
+      </div>
+      <label class="connection-control">
+        <span>Sinov aloqasi</span>
+        <input type="checkbox" role="switch" id="demo-link" checked>
+        <span class="switch-track" aria-hidden="true"></span>
+      </label>
+    </section>
+
+    <div class="workspace">
+      <section class="panel visit-panel" aria-labelledby="visit-title">
+        <div class="panel-heading">
+          <div>
+            <h1 id="visit-title">Yangi tashrif</h1>
+            <p>Faqat sintetik namuna ma’lumotlaridan foydalaning.</p>
+          </div>
+          <button type="button" class="button quiet" id="example-button">Namuna</button>
+        </div>
+        <form id="visit-form" autocomplete="off">
+          <fieldset id="visit-fields" aria-label="Tashrif ma’lumotlari">
+            <div class="patient-fields">
+              <label class="field">Bemor kodi
+                <input name="patient_code" type="text" maxlength="32" placeholder="P-104" required>
+              </label>
+              <label class="field">Yosh
+                <input name="patient_age" type="number" inputmode="numeric" min="18" max="120" placeholder="18–120" required>
+              </label>
+            </div>
+            <label class="field note-field">Shikoyat yoki kuzatuv
+              <textarea name="voice_text" minlength="3" maxlength="900" rows="3"
+                        placeholder="Tashrif paytida aytilgan shikoyatni yozing" required></textarea>
+            </label>
+            <details class="measurements" id="measurements">
+              <summary><span>Datchik ko‘rsatkichlari</span><span class="hint">Ixtiyoriy</span></summary>
+              <div class="measurement-fields">
+                <label class="field">Puls (zarb/daq)
+                  <input name="heart_rate_bpm" type="number" inputmode="numeric" min="1" max="320">
+                </label>
+                <label class="field">SpO₂ (%)
+                  <input name="spo2_percent" type="number" inputmode="numeric" min="1" max="100">
+                </label>
+                <label class="field">Harorat (°C)
+                  <input name="temperature_c" type="number" inputmode="decimal" min="20" max="50" step="0.1">
+                </label>
+                <label class="field">Nafas (marta/daq)
+                  <input name="respiration_rate" type="number" inputmode="numeric" min="1" max="100">
+                </label>
+                <label class="field">Qaltirash
+                  <select name="tremor_detected">
+                    <option value="">Kiritilmagan</option>
+                    <option value="false">Yo‘q</option>
+                    <option value="true">Bor</option>
+                  </select>
+                </label>
+                <label class="field">O‘pka tovushi
+                  <select name="lung_audio_status">
+                    <option value="">Kiritilmagan</option>
+                    <option value="normal">Odatiy</option>
+                    <option value="wheezing_detected">Xirillash bor</option>
+                  </select>
+                </label>
+              </div>
+            </details>
+          </fieldset>
+          <div class="form-actions">
+            <button type="button" class="button quiet" id="analyze">AI tahlili</button>
+            <button type="submit" class="button primary" id="save">Tashrifni saqlash</button>
+          </div>
+          <p id="form-status" class="form-status" role="status" hidden></p>
+          <div id="analysis-result" class="analysis-result" role="status" hidden></div>
+        </form>
+      </section>
+
+      <aside class="panel journal-panel" aria-labelledby="journal-title">
+        <div class="panel-heading journal-heading">
+          <div>
+            <h2 id="journal-title">Tashriflar</h2>
+            <p id="queue-summary" role="status">Yozuvlar yuklanmoqda</p>
+          </div>
+          <button type="button" class="button quiet" id="retry" disabled>Qayta yuborish</button>
+        </div>
+        <ul id="local-records" class="records" aria-label="Qurilmadagi tashriflar"></ul>
+        <details class="receipt-section" id="receipt-section">
+          <summary>Qabul jurnali</summary>
+          <div class="receipt-content">
+            <p id="journal-status" role="status"></p>
+            <ul id="server-records" class="records server-records" aria-label="Server qabul qilgan tashriflar"></ul>
+          </div>
+        </details>
+      </aside>
+    </div>
+    <p class="offline-readiness" id="offline-readiness" role="status">Oflayn ochish tayyorlanmoqda.</p>
+    <noscript>Planshetni ishga tushirish uchun JavaScript’ni yoqing.</noscript>
+  </main>
+</body>
+</html>

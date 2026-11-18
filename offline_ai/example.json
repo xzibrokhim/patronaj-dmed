@@ -1,0 +1,12 @@
+{
+  "patient_age": 62,
+  "voice_text": "Bemor ko'krak qafasida og'riq va nafas qisishidan shikoyat qilyapti, 2 kundan beri isitmasi bor",
+  "sensors": {
+    "heart_rate_bpm": 118,
+    "spo2_percent": 91,
+    "temperature_c": 38.4,
+    "respiration_rate": 25,
+    "tremor_detected": false,
+    "lung_audio_status": "wheezing_detected"
+  }
+}
