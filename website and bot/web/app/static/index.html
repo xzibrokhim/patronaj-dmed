@@ -1,0 +1,596 @@
+<!doctype html>
+<html lang="uz">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#F4F6F5">
+  <meta name="description" content="Offline-first patronage nurse dashboard prototype for recording simulated observations and securely synchronizing them with a district doctor.">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Digital Bridge | Patronage nurse dashboard prototype</title>
+  <link rel="icon" href="/static/icons/stethoscope.svg">
+  <link rel="stylesheet" href="/static/styles.css">
+  <link rel="stylesheet" href="/static/workspace.css">
+</head>
+<body>
+  <div id="workspace">
+  <a class="skip-link" href="#main-content" data-i18n="skip">Asosiy qismga o‘tish</a>
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand-lockup">
+        <span class="brand-mark" aria-hidden="true">
+          <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M11 2v2" />
+            <path d="M5 2v2" />
+            <path d="M5 3H4a2 2 0 0 0-2 2v4a6 6 0 0 0 12 0V5a2 2 0 0 0-2-2h-1" />
+            <path d="M8 15a6 6 0 0 0 12 0v-3" />
+            <circle cx="20" cy="10" r="2" />
+          </svg>
+        </span>
+        <div>
+          <h1>Digital Bridge</h1>
+          <p data-i18n="subtitle">Patronaj hamshirasi uchun prototip</p>
+        </div>
+      </div>
+      <div class="header-controls">
+        <div class="language-switch" role="group" aria-label="Til / Язык">
+          <button class="lang active" data-lang="uz" type="button" aria-pressed="true">UZ</button>
+          <button class="lang" data-lang="ru" type="button" aria-pressed="false">RU</button>
+        </div>
+        <label class="api-control" for="apiEnabled">
+          <input id="apiEnabled" type="checkbox">
+          <span aria-hidden="true"></span>
+          <b data-i18n="apiMode">Server</b>
+        </label>
+        <button id="modeToggle" class="mode-button" type="button" aria-pressed="false">
+          <img id="modeIcon" src="/static/icons/wifi-off.svg" alt="" width="17" height="17">
+          <span data-i18n="offline">OFFLINE REJIM</span>
+        </button>
+      </div>
+      <div class="sync-controls">
+        <p class="queue-pill">
+          <span data-i18n="localMemory">Yuborilmagan yozuvlar</span>
+          <strong id="queueCount">0</strong>
+        </p>
+        <button id="syncButton" class="primary-button" type="button">
+          <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+            <path d="M21 3v5h-5" />
+            <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+            <path d="M8 16H3v5" />
+          </svg>
+          <span data-i18n="sync">Yozuvlarni yuborish</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <section class="session-bar" aria-label="Active nurse shift">
+    <div class="session-inner">
+      <div class="nurse-identity">
+        <span id="nurseAvatar" class="nurse-avatar" aria-hidden="true">SN</span>
+        <div class="nurse-details">
+          <div class="nurse-name-row">
+            <span class="shift-eyebrow" data-i18n="activeShiftLabel">FAOL SMENA</span>
+            <strong id="activeNurseName">Salimova Nilufar</strong>
+            <span id="activeNurseId" class="nurse-id-pill">PN-204</span>
+          </div>
+          <div class="nurse-facility-row">
+            <span data-i18n="facilityLabel">Muassasa:</span>
+            <span id="activeNurseFacility">Bo‘stonliq tumani 4-sonli OSHP</span>
+          </div>
+        </div>
+      </div>
+      <div class="session-actions">
+        <span class="auth-status-pill">
+          <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+            <path d="m9 12 2 2 4-4" />
+          </svg>
+          <span data-i18n="authStatusLabel">Lokal PIN tasdiqlangan</span>
+        </span>
+        <button id="logoutButton" class="tertiary-button" type="button">
+          <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+            <polyline points="16 17 21 12 16 7" />
+            <line x1="21" x2="9" y1="12" y2="12" />
+          </svg>
+          <span data-i18n="switchNurse">Smenani almashtirish / Chiqish</span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <nav class="workspace-nav" aria-label="Patronaj / Патронаж">
+    <div class="workspace-nav-inner">
+      <a href="#telemetry-title"><img src="/static/icons/activity.svg" alt="" width="17" height="17"><span data-i18n="navExam">Ko‘rik</span></a>
+      <a href="#assessment-title"><img src="/static/icons/user-round.svg" alt="" width="17" height="17"><span data-i18n="navRecord">Bemor yozuvi</span></a>
+      <a href="#patients-title"><img src="/static/icons/database.svg" alt="" width="17" height="17"><span data-i18n="navQueue">Navbat</span></a>
+      <a href="#replies-title"><img src="/static/icons/message-square.svg" alt="" width="17" height="17"><span data-i18n="navReplies">Javoblar</span></a>
+      <p id="connectionSummary" class="connection-summary" role="status"></p>
+    </div>
+  </nav>
+
+  <main id="main-content" class="dashboard" tabindex="-1">
+    <p class="demo-notice"><img src="/static/icons/info.svg" alt="" width="17" height="17"><span data-i18n="demoNotice">Hackathon prototipi · Faqat test ma’lumotlaridan foydalaning.</span></p>
+    <section class="surface telemetry-panel" aria-labelledby="telemetry-title">
+      <div class="section-heading">
+        <div>
+          <h2 id="telemetry-title" tabindex="-1" data-i18n="telemetry">Sensor ko‘rsatkichlari</h2>
+        </div>
+        <span id="sensorStatus" class="status-label" role="status" data-i18n="waiting">Kutilmoqda</span>
+      </div>
+
+      <button id="examButton" class="secondary-button wide" type="button">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M5 5a2 2 0 0 1 3.008-1.728l11.997 6.998a2 2 0 0 1 .003 3.458l-12 7A2 2 0 0 1 5 19z" />
+        </svg>
+        <span>
+          <b data-i18n="startExam">Ko‘rikni boshlash</b>
+          <small data-i18n="tenSeconds">10 soniya</small>
+        </span>
+      </button>
+
+      <div id="examProgress" class="progress-block hidden" aria-live="polite">
+        <div class="progress-track" role="progressbar" aria-labelledby="examButton" aria-valuemin="0" aria-valuemax="10" aria-valuenow="0">
+          <span id="examProgressBar"></span>
+        </div>
+        <p id="examCountdown"><b id="examSeconds">10</b> <span data-i18n="secondsLeft">soniya qoldi</span></p>
+        <p id="examComplete" class="hidden" data-i18n="examDone">10 soniyalik ko‘rik tugadi.</p>
+      </div>
+      <div id="telemetryError" class="inline-state error-state hidden" role="alert"></div>
+
+      <label class="scenario-control" for="sensorMode">
+        <span data-i18n="sensorModeLabel">Sensor manbasi</span>
+        <select id="sensorMode" name="sensorMode">
+          <option value="auto" data-i18n="sensorAuto">Avtomatik · ESP32 aniqlansa jonli</option>
+          <option value="live" data-i18n="sensorLive">ESP32 · faqat jonli</option>
+          <option value="demo" data-i18n="sensorDemo">Demo · simulyatsiya</option>
+        </select>
+      </label>
+      <label class="scenario-control" for="sensorScenario">
+        <span data-i18n="scenarioLabel">Demo sensor ssenariysi</span>
+        <select id="sensorScenario" name="sensorScenario">
+          <option value="normal" data-i18n="scenarioNormal">Test: barqaror qiymatlar</option>
+          <option value="review" data-i18n="scenarioReview">Test: shifokor ko‘rigi kerak</option>
+          <option value="urgent" data-i18n="scenarioUrgent">Test: tezkor e’tibor signali</option>
+          <option value="disconnected" data-i18n="scenarioDisconnected">Test: datchik yoki barmoq ulanmagan</option>
+        </select>
+      </label>
+
+      <div class="vitals-list">
+        <article class="vital-row vital-pulse vital-ecg-hero">
+          <div class="vital-head ecg-head">
+            <span class="vital-icon" aria-hidden="true">
+              <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2" />
+              </svg>
+            </span>
+            <div class="vital-meta">
+              <div class="ecg-header-top">
+                <span data-i18n="ecgTitle">Yurak kardiogrammasi (EKG)</span>
+                <span id="ecgLeadStatus" class="sensor-badge badge-ok" data-i18n="ecgLeadsOk">Elektrodlar ulangan</span>
+              </div>
+              <div class="ecg-readout-group">
+                <strong class="vital-primary"><b id="pulseValue">—</b> <small data-i18n="bpmUnit">zarb/daq (Puls)</small></strong>
+                <span class="vital-subrow"><b id="ecgMvValue">—</b> mV</span>
+                <span id="espZoneBadge" class="sensor-badge badge-ok" data-i18n="hwZone_GREEN">Holat: Me’yorida</span>
+              </div>
+            </div>
+          </div>
+          <canvas id="pulseChart" class="ecg-hero-canvas" aria-label="Yurak kardiogrammasi"></canvas>
+        </article>
+
+        <article class="vital-row vital-spo2">
+          <div class="vital-head">
+            <span class="vital-icon" aria-hidden="true">
+              <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M15.6 2.7a10 10 0 1 0 5.7 5.7" />
+                <circle cx="12" cy="12" r="2" />
+                <path d="M13.4 10.6 19 5" />
+              </svg>
+            </span>
+            <div class="vital-meta">
+              <div class="sensor-title-row">
+                <span data-i18n="max30102Title">Qon kislorodi (SpO₂)</span>
+              </div>
+              <span id="fingerStatus" class="sensor-badge badge-ok" data-i18n="fingerOn">Barmoq datchikda</span>
+              <strong class="vital-primary"><b id="spo2Value">—</b> <small>%</small></strong>
+              <div class="vital-subrow">
+                <span data-i18n="opticalPulse">Puls:</span>
+                <b id="maxHrValue" class="tremor-readout">—</b>
+              </div>
+            </div>
+          </div>
+          <canvas id="spo2Chart" aria-label="Qon kislorodi chizmasi"></canvas>
+        </article>
+
+        <article class="vital-row vital-temp">
+          <div class="vital-head">
+            <span class="vital-icon" aria-hidden="true">
+              <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M14 4v10.54a4 4 0 1 1-4 0V4a2 2 0 0 1 4 0Z" />
+              </svg>
+            </span>
+            <div class="vital-meta">
+              <div class="sensor-title-row">
+                <span data-i18n="ds18b20Title">Tana harorati</span>
+              </div>
+              <span id="tempStatus" class="sensor-badge badge-ok" data-i18n="tempProbeOk">Termometr tayyor</span>
+              <strong class="vital-primary"><b id="temperatureValue">—</b> <small>°C</small></strong>
+            </div>
+          </div>
+          <canvas id="temperatureChart" aria-label="Tana harorati grafigi"></canvas>
+        </article>
+
+        <article class="vital-row vital-resp">
+          <div class="vital-head">
+            <span class="vital-icon" aria-hidden="true">
+              <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12.8 19.6A2 2 0 1 0 14 16H2" />
+                <path d="M17.5 8a2.5 2.5 0 1 1 2 4H2" />
+                <path d="M9.8 4.4A2 2 0 1 1 11 8H2" />
+              </svg>
+            </span>
+            <div class="vital-meta">
+              <div class="sensor-title-row">
+                <span id="airCardTitle" data-i18n="mq135Title">Nafas olish soni</span>
+              </div>
+              <span id="co2Status" class="sensor-badge badge-ok" data-i18n="co2Normal">Havo toza</span>
+              <strong class="vital-primary"><b id="respirationValue">—</b> <small id="airCardUnit" data-i18n="perMinute">/daq</small></strong>
+              <div class="vital-subrow">
+                <span id="airCardLabel" data-i18n="airLabel">Havo:</span>
+                <b id="airQualityText" class="tremor-readout" data-i18n="airFresh">Me’yorda</b>
+                <span id="co2Value" class="hidden">—</span>
+                <span id="tremorValue" class="hidden">—</span>
+              </div>
+            </div>
+          </div>
+          <canvas id="respirationChart" aria-label="Sensor trend" aria-labelledby="airCardTitle"></canvas>
+        </article>
+      </div>
+
+    </section>
+
+    <section class="surface assessment-panel" aria-labelledby="assessment-title">
+      <div class="section-heading">
+        <div>
+          <span class="eyebrow" data-i18n="nurseInput">HAMSHIRA KIRITISHI</span>
+          <h2 id="assessment-title" tabindex="-1" data-i18n="complaints">Bemor yozuvi</h2>
+        </div>
+      </div>
+
+      <form id="patientForm" novalidate>
+        <div id="formError" class="inline-state error-state hidden" role="alert" tabindex="-1"></div>
+        <div class="patient-fields">
+          <label for="patientName">
+            <span data-i18n="patientName">Bemor F.I.Sh.</span>
+            <input id="patientName" name="patientName" autocomplete="name" maxlength="120" required>
+          </label>
+          <label for="patientAge">
+            <span data-i18n="age">Yoshi</span>
+            <input id="patientAge" name="patientAge" type="number" inputmode="numeric" min="0" max="120" required>
+          </label>
+          <label for="patientVillage">
+            <span data-i18n="village">Qishloq / mahalla</span>
+            <input id="patientVillage" name="patientVillage" maxlength="120" required>
+          </label>
+        </div>
+
+        <label class="notes-label" for="complaint" data-i18n="complaintText">Bemor aytgan shikoyat</label>
+        <div class="notes-wrap">
+          <textarea id="complaint" name="complaint" rows="4" maxlength="1000" required data-i18n-placeholder="complaintPlaceholder" placeholder="Bemor aytgan ma’lumotni kiriting"></textarea>
+          <div class="notes-toolbar">
+            <button id="voiceButton" class="icon-text-button" type="button">
+              <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 19v3" />
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2" />
+                <rect x="9" y="2" width="6" height="13" rx="3" />
+              </svg>
+              <span data-i18n="voice">Ovoz bilan</span>
+            </button>
+            <p id="voiceStatus" class="helper-text" data-i18n="voiceHint">Mikrofon ishlamasa, matnni qo‘lda kiriting.</p>
+          </div>
+        </div>
+
+        <label class="notes-label" for="nurseDiagnosis" data-i18n="nurseDiagnosis">Hamshira kuzatuvi va ko‘rik qaydi</label>
+        <textarea id="nurseDiagnosis" name="nurseDiagnosis" rows="3" maxlength="1000" data-i18n-placeholder="nurseDiagnosisPlaceholder" aria-describedby="nurseDiagnosisHint"></textarea>
+        <p id="nurseDiagnosisHint" class="helper-text" data-i18n="nurseDiagnosisHint">Hamshira tashxis qo‘ymaydi — shifokor uchun faqat ob’ektiv ko‘rik kuzatuvlari qayd etiladi.</p>
+
+        <details class="analysis-disclosure">
+          <summary><span data-i18n="analysisDetails">Demo tahlil</span><small id="reviewPeek"></small></summary>
+        <div class="analysis-actions">
+          <button id="runAiButton" class="secondary-button" type="button">
+            <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2" />
+            </svg>
+            <span data-i18n="runAnalysis">Demo tahlilni yangilash</span>
+          </button>
+          <small data-i18n="analysisSafety">Natija klinik AI emas va tashxis bermaydi.</small>
+        </div>
+
+        <article id="aiCard" class="review-card review-pending" aria-labelledby="review-title">
+          <div class="review-heading">
+            <span class="review-icon" aria-hidden="true">
+              <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" />
+                <path d="M12 9v4" />
+                <path d="M12 17h.01" />
+              </svg>
+            </span>
+            <div>
+              <span data-i18n="reviewLabel">AVTOMATIK KO‘RIB CHIQISH · DEMO</span>
+              <h3 id="review-title" data-i18n="reviewPending">Tahlil ishga tushirilmagan</h3>
+            </div>
+            <span id="riskBand" class="risk-band" data-i18n="notAnalysed">KUTILMOQDA</span>
+          </div>
+          <p id="riskSummary" data-i18n="reviewSummary">Ko‘rsatkichlar faqat qayd etiladi. Ushbu prototip tashxis, tavsiya yoki klinik xavf darajasini bermaydi.</p>
+          <div class="demo-score">
+            <div>
+              <span data-i18n="demoScore">Demo signal bali</span>
+              <strong id="riskScore">—</strong>
+            </div>
+            <div class="score-track" role="meter" aria-label="Demo signal score" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+              <span id="riskScoreBar"></span>
+            </div>
+          </div>
+          <ul id="riskReasons">
+            <li data-i18n="clinicalTodo">Klinik skrining algoritmi vakolatli shifokor va mahalliy tasdiqlangan protokol asosida tasdiqlanishi lozim.</li>
+          </ul>
+          <h4 data-i18n="safeChecklist">Xavfsiz demo amallari</h4>
+          <ul id="safetyChecklist" class="safety-checklist">
+            <li><label><input type="checkbox"><span data-i18n="checkVerify">Sensor qiymatlarini haqiqiy qurilmada qayta tekshiring.</span></label></li>
+            <li><label><input type="checkbox"><span data-i18n="checkNoDiagnosis">Demo natijasiga tayanib tashxis yoki davolash qarori qabul qilmang.</span></label></li>
+            <li><label><input type="checkbox"><span data-i18n="checkClinician">Tasdiqlangan mahalliy protokol bo‘yicha mas’ul shifokor bilan bog‘laning.</span></label></li>
+          </ul>
+          <p class="source-note"><span data-i18n="decisionSource">WHO tasdiqlanmagan qaror mantig‘ini ishlatmaslikni tavsiya qiladi.</span> <a href="https://iris.who.int/bitstream/handle/10665/379452/9789240093362-eng.pdf" target="_blank" rel="noopener noreferrer">WHO, 2024</a></p>
+        </article>
+        </details>
+
+        <section class="consent-panel" aria-labelledby="privacy-title">
+          <div class="consent-heading">
+            <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+              <path d="m9 12 2 2 4-4" />
+            </svg>
+            <h3 id="privacy-title" data-i18n="privacyTitle">Maxfiylik va rozilik</h3>
+          </div>
+          <details>
+            <summary data-i18n="readPrivacy">Prototip maxfiylik eslatmasini o‘qish</summary>
+            <div class="privacy-copy">
+              <p data-i18n="privacyLocal">Yozuvlar ushbu qurilmadagi IndexedDB bazasida saqlanadi va faqat hamshira sinxronlashni boshlaganda sozlangan backendga yuboriladi.</p>
+              <p data-i18n="privacyLimits">Prototip muhiti: klinik joriy etishdan oldin tashkilot nomi, saqlash muddati, kirish nazorati, o‘chirish tartibi va huquqiy asos rasmiylashtiriladi.</p>
+              <p><a href="/static/privacy.html" target="_blank" rel="noopener noreferrer" data-i18n="fullPrivacy">To‘liq prototip maxfiylik siyosati</a></p>
+            </div>
+          </details>
+          <label class="consent-check" for="patientConsent">
+            <input id="patientConsent" type="checkbox" required>
+            <span data-i18n="consentText">Bemor ushbu prototipda ma’lumotni lokal saqlash va keyin sinxronlashga rozilik berdi.</span>
+          </label>
+        </section>
+
+        <button id="saveButton" class="primary-button wide" type="submit">
+          <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M15.2 3a2 2 0 0 1 1.4.6l3.8 3.8a2 2 0 0 1 .6 1.4V19a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z" />
+            <path d="M17 21v-7a1 1 0 0 0-1-1H8a1 1 0 0 0-1 1v7" />
+            <path d="M7 3v4a1 1 0 0 0 1 1h7" />
+          </svg>
+          <span data-i18n="saveLocal">Yozuvni lokal saqlash</span>
+        </button>
+      </form>
+    </section>
+
+    <section class="surface queue-panel" aria-labelledby="patients-title">
+      <div class="section-heading compact">
+        <div>
+          <span class="eyebrow" data-i18n="localRecords">LOKAL YOZUVLAR</span>
+          <h2 id="patients-title" tabindex="-1" data-i18n="todayQueue">Bugungi patronaj navbati</h2>
+        </div>
+        <div class="queue-heading-actions">
+          <span id="patientTotal" class="count-badge">0</span>
+          <button id="loadDemoButton" class="tertiary-button" type="button">
+            <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M5 12h14" />
+              <path d="M12 5v14" />
+            </svg>
+            <span data-i18n="loadDemo">3 ta test yozuvini yuklash</span>
+          </button>
+        </div>
+      </div>
+      <p id="syncFeedback" class="sync-feedback hidden" role="status"></p>
+      <div id="patientEmpty" class="inline-state empty-state" aria-live="polite">
+        <span data-i18n="noPatients">Lokal yozuv yo‘q. Bemor ma’lumotini kiritib saqlang.</span>
+      </div>
+      <div id="patientTableWrap" class="table-wrap hidden" aria-live="polite" aria-busy="true">
+        <table>
+          <thead>
+            <tr>
+              <th scope="col" data-i18n="time">Vaqt</th>
+              <th scope="col" data-i18n="patient">Bemor</th>
+              <th scope="col" data-i18n="sensorSnapshot">Sensor ko‘rsatkichlari</th>
+              <th scope="col" data-i18n="demoZone">Demo signal</th>
+              <th scope="col" data-i18n="syncStatus">Sinxronizatsiya</th>
+            </tr>
+          </thead>
+          <tbody id="patientTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <aside class="side-column" aria-label="Records and doctor responses">
+      <section class="surface replies-panel" aria-labelledby="replies-title">
+        <div class="section-heading compact">
+          <div>
+            <span class="eyebrow" data-i18n="districtDoctor">TUMAN SHIFOKORI</span>
+            <h2 id="replies-title" tabindex="-1" data-i18n="doctorReplies">Javoblar</h2>
+          </div>
+          <span id="replyBadge" class="count-badge" aria-label="Reply count">0</span>
+        </div>
+        <div id="replyList" class="reply-list" aria-live="polite" aria-busy="true">
+          <div class="inline-state loading-state">
+            <svg class="icon spin" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+              <path d="M21 3v5h-5" />
+              <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+              <path d="M8 16H3v5" />
+            </svg>
+            <span data-i18n="loading">Yuklanmoqda…</span>
+          </div>
+        </div>
+      </section>
+
+      <details class="surface todo-panel">
+        <summary id="deployment-title" data-i18n="deploymentTodo">Klinik joriy etish talablari</summary>
+        <ul>
+          <li data-i18n="todoClinical">Klinik protokol va mas’ul shifokor tasdig‘ini rasmiylashtirish</li>
+          <li data-i18n="todoLegal">Huquqiy maxfiylik siyosati va bemor roziligi shaklini tasdiqlash</li>
+          <li data-i18n="todoContact">Mahalliy shoshilinch yordam va texnik qo‘llab-quvvatlash aloqalarini ulash</li>
+        </ul>
+      </details>
+    </aside>
+
+    <section class="notice-stack" aria-label="Safety information">
+      <div class="notice notice-info" role="note">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="10" />
+          <path d="M12 16v-4" />
+          <path d="M12 8h.01" />
+        </svg>
+        <div>
+          <strong data-i18n="infoOnly">Faqat ma’lumot uchun; professional tibbiy maslahat o‘rnini bosmaydi.</strong>
+          <p data-i18n="prototypeNotice">Bu hackathon prototipi. Sensorlar va avtomatik ko‘rib chiqish simulyatsiya qilingan.</p>
+        </div>
+      </div>
+      <div class="notice notice-emergency" role="alert">
+        <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M10 10H6" />
+          <path d="M14 18V6a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2v11a1 1 0 0 0 1 1h2" />
+          <path d="M19 18h2a1 1 0 0 0 1-1v-3.28a1 1 0 0 0-.684-.948l-1.923-.641a1 1 0 0 1-.578-.502l-1.539-3.076A1 1 0 0 0 16.382 8H14" />
+          <path d="M8 8v4" />
+          <path d="M9 18h6" />
+          <circle cx="17" cy="18" r="2" />
+          <circle cx="7" cy="18" r="2" />
+        </svg>
+        <div>
+          <strong data-i18n="emergencyTitle">Shoshilinch holat</strong>
+          <p>
+            <span data-i18n="emergencyText">Bemor darhol xavf ostida bo‘lsa, mahalliy tez yordam raqamiga qo‘ng‘iroq qiling. Bu ilova tez yordam yubormaydi.</span>
+            <a href="https://www.who.int/health-topics/emergency-care" target="_blank" rel="noopener noreferrer" data-i18n="whoSource">WHO manbasi</a>
+          </p>
+        </div>
+      </div>
+    </section>
+  </main>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+  <div id="syncOverlay" class="sync-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="syncTitle">
+    <div class="sync-modal">
+      <svg class="icon spin" xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8" />
+        <path d="M21 3v5h-5" />
+        <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16" />
+        <path d="M8 16H3v5" />
+      </svg>
+      <h2 id="syncTitle" data-i18n="syncing">Sinxronlanmoqda</h2>
+      <p id="syncDetail" data-i18n="syncDetail">Yozuvlar yuborilmoqda. Bu oynani yopmang.</p>
+      <div class="progress-track"><span id="syncTrack"></span></div>
+    </div>
+  </div>
+
+  <div id="loginOverlay" class="login-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="loginTitle">
+    <div class="login-modal">
+      <div class="login-header">
+        <div class="login-brand">
+          <span class="brand-mark" aria-hidden="true">
+            <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M11 2v2" />
+              <path d="M5 2v2" />
+              <path d="M5 3H4a2 2 0 0 0-2 2v4a6 6 0 0 0 12 0V5a2 2 0 0 0-2-2h-1" />
+              <path d="M8 15a6 6 0 0 0 12 0v-3" />
+              <circle cx="20" cy="10" r="2" />
+            </svg>
+          </span>
+          <div>
+            <span class="login-eyebrow">Digital Bridge</span>
+            <h2 id="loginTitle" data-i18n="loginTitle">Patronaj hamshirasi tizimga kirishi</h2>
+          </div>
+          <div class="language-switch login-language" role="group" aria-label="Til / Язык">
+            <button class="lang active" data-lang="uz" type="button" aria-pressed="true">UZ</button>
+            <button class="lang" data-lang="ru" type="button" aria-pressed="false">RU</button>
+          </div>
+        </div>
+        <p class="login-subtitle" data-i18n="loginSubtitle">Qishloq hududida oflayn ishlash uchun lokal PIN va smena ma’lumotlarini tasdiqlang.</p>
+      </div>
+
+      <div class="login-body">
+        <div class="preset-block">
+          <span class="preset-label" data-i18n="loginPresetLabel">Tezkor demo profil tanlash:</span>
+          <div class="preset-grid">
+            <button
+              class="preset-nurse-btn"
+              type="button"
+              data-name="Salimova Nilufar"
+              data-id="PN-204"
+              data-facility="Bo‘stonliq tumani 4-sonli OSHP"
+              data-pin="2026"
+            >
+              <strong>Salimova Nilufar</strong>
+              <span>PN-204 · Bo‘stonliq 4-OSHP</span>
+            </button>
+            <button
+              class="preset-nurse-btn"
+              type="button"
+              data-name="Karimov Javohir"
+              data-id="PN-118"
+              data-facility="Chimyon Mobil Brigada"
+              data-pin="2026"
+            >
+              <strong>Karimov Javohir</strong>
+              <span>PN-118 · Chimyon Mobil Brigada</span>
+            </button>
+          </div>
+        </div>
+
+        <form id="loginForm" novalidate>
+          <div id="loginError" class="inline-state error-state hidden" role="alert"></div>
+          <div class="login-fields">
+            <label for="loginNurseName">
+              <span data-i18n="nurseNameLabel">Hamshira F.I.Sh.</span>
+              <input id="loginNurseName" name="loginNurseName" maxlength="100" value="Salimova Nilufar" required>
+            </label>
+            <label for="loginNurseId">
+              <span data-i18n="nurseIdLabel">Tabel / ID raqami</span>
+              <input id="loginNurseId" name="loginNurseId" maxlength="32" value="PN-204" required>
+            </label>
+            <label for="loginNurseFacility">
+              <span data-i18n="nurseFacilityLabel">Biriktirilgan OSHP / Hudud</span>
+              <input id="loginNurseFacility" name="loginNurseFacility" maxlength="120" value="Bo‘stonliq tumani 4-sonli OSHP" required>
+            </label>
+            <label for="loginNursePin">
+              <span data-i18n="nursePinLabel">Lokal xavfsizlik PIN-kodi</span>
+              <input id="loginNursePin" name="loginNursePin" type="password" inputmode="numeric" maxlength="8" value="2026" required>
+            </label>
+          </div>
+          <button id="loginSubmitButton" class="primary-button wide" type="submit">
+            <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect width="18" height="11" x="3" y="11" rx="2" ry="2" />
+              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+            </svg>
+            <span data-i18n="loginSubmit">Smenani boshlash va kirish</span>
+          </button>
+        </form>
+
+        <p class="login-footnote">
+          <svg class="icon" xmlns="http://www.w3.org/2000/svg" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z" />
+            <path d="m9 12 2 2 4-4" />
+          </svg>
+          <span data-i18n="loginOfflineNote">Demo smena profili shu qurilmada saqlanadi.</span>
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="/static/js/main.js"></script>
+</body>
+</html>
