@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI-Patronaj DMED — Offline Medical Bio-Node &amp; Rural Triage</title>
+  <style>
+    :root {
+      --bg: #07101c;
+      --panel: #0e1a2b;
+      --panel-2: #13233a;
+      --border: rgba(148, 163, 184, 0.16);
+      --text: #e2e8f0;
+      --muted: #94a3b8;
+      --green: #10b981;
+      --yellow: #f59e0b;
+      --red: #ef4444;
+      --cyan: #22d3ee;
+      --blue: #3b82f6;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: radial-gradient(circle at top right, #0f2544 0%, var(--bg) 52%);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.45;
+    }
+    .container { max-width: 1320px; margin: 0 auto; padding: 16px 20px 36px; }
+    .topbar {
+      display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between;
+      background: var(--panel); border: 1px solid var(--border); border-radius: 14px;
+      padding: 14px 18px; margin-bottom: 16px;
+    }
+    .brand { display: flex; align-items: center; gap: 12px; }
+    .brand-badge {
+      width: 42px; height: 42px; border-radius: 11px; display: grid; place-items: center;
+      background: linear-gradient(135deg, #0ea5e9, #10b981); font-weight: 800; color: #04101c;
+      font-size: 18px;
+    }
+    .brand h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
+    .brand p { font-size: 12px; color: var(--muted); }
+    .controls { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .pill {
+      display: inline-flex; align-items: center; gap: 7px; padding: 7px 12px;
+      border-radius: 999px; font-size: 12px; font-weight: 600;
+      border: 1px solid var(--border); background: var(--panel-2);
+    }
+    .dot { width: 9px; height: 9px; border-radius: 50%; background: var(--green); }
+    .dot.offline { background: var(--red); box-shadow: 0 0 10px var(--red); }
+    .dot.demo { background: var(--cyan); box-shadow: 0 0 10px var(--cyan); }
+    button {
+      cursor: pointer; border: none; border-radius: 10px; font-weight: 600; font-size: 13px;
+      padding: 9px 14px; transition: transform 0.1s ease, opacity 0.15s ease;
+    }
+    button:active { transform: scale(0.98); }
+    .btn-mode { background: #1e293b; color: var(--text); border: 1px solid var(--border); }
+    .btn-sync {
+      background: linear-gradient(135deg, #2563eb, #0ea5e9); color: #fff;
+      box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+    }
+    .btn-sync:disabled { opacity: 0.55; cursor: not-allowed; }
+    .btn-save { background: #059669; color: #fff; width: 100%; padding: 11px; }
+    .btn-ai { background: #0284c7; color: #fff; width: 100%; padding: 11px; }
+    .preset-bar {
+      display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 14px;
+      padding: 10px 14px; background: rgba(14, 26, 43, 0.8);
+      border: 1px solid var(--border); border-radius: 12px; font-size: 12px; color: var(--muted);
+    }
+    .preset-btn {
+      padding: 5px 10px; font-size: 12px; border-radius: 8px;
+      background: var(--panel-2); color: var(--text); border: 1px solid var(--border);
+    }
+    .preset-btn.active { border-color: var(--cyan); color: var(--cyan); }
+
+    .grid-main {
+      display: grid; grid-template-columns: 1.45fr 1fr; gap: 16px; margin-bottom: 16px;
+    }
+    @media (max-width: 980px) { .grid-main { grid-template-columns: 1fr; } }
+
+    .card {
+      background: var(--panel); border: 1px solid var(--border); border-radius: 14px; padding: 16px;
+    }
+    .card-header {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px; gap: 8px;
+    }
+    .card-title { font-size: 14px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+    .badge {
+      font-size: 11px; font-weight: 700; padding: 3px 8px; border-radius: 6px;
+      background: rgba(34, 211, 238, 0.14); color: var(--cyan);
+    }
+    .badge.ok { background: rgba(16, 185, 129, 0.16); color: var(--green); }
+    .badge.warn { background: rgba(245, 158, 11, 0.18); color: var(--yellow); }
+    .badge.err { background: rgba(239, 68, 68, 0.18); color: var(--red); }
+
+    canvas#ecgCanvas {
+      width: 100%; height: 220px; display: block; border-radius: 10px;
+      background: #040b14; border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+    .vitals-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 12px;
+    }
+    @media (max-width: 600px) { .vitals-grid { grid-template-columns: 1fr; } }
+    .vital-box {
+      background: var(--panel-2); border: 1px solid var(--border); border-radius: 11px; padding: 12px;
+    }
+    .vital-label { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.04em; }
+    .vital-val { font-size: 26px; font-weight: 800; margin: 4px 0 2px; }
+    .vital-sub { font-size: 11px; color: var(--muted); }
+
+    .device-mirror {
+      margin-top: 12px; padding: 12px; border-radius: 11px;
+      background: #091322; border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    }
+    .led-ring {
+      width: 24px; height: 24px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.25);
+      background: var(--green); box-shadow: 0 0 16px var(--green);
+    }
+    .led-ring.YELLOW { background: var(--yellow); box-shadow: 0 0 16px var(--yellow); }
+    .led-ring.RED { background: var(--red); box-shadow: 0 0 18px var(--red); animation: pulse 0.9s infinite; }
+    @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.16); } }
+
+    .form-grid { display: grid; grid-template-columns: 1fr 90px; gap: 8px; margin-bottom: 8px; }
+    input, textarea {
+      width: 100%; background: var(--panel-2); color: var(--text);
+      border: 1px solid var(--border); border-radius: 9px; padding: 9px 11px;
+      font-family: inherit; font-size: 13px;
+    }
+    textarea { resize: vertical; min-height: 66px; margin-bottom: 10px; }
+
+    .triage-box {
+      margin-top: 12px; padding: 14px; border-radius: 12px; border: 1px solid var(--green);
+      background: rgba(16, 185, 129, 0.1);
+    }
+    .triage-box.YELLOW { border-color: var(--yellow); background: rgba(245, 158, 11, 0.12); }
+    .triage-box.RED { border-color: var(--red); background: rgba(239, 68, 68, 0.14); }
+    .triage-zone { font-size: 15px; font-weight: 800; margin-bottom: 4px; }
+    .triage-diag { font-size: 13px; margin-bottom: 8px; }
+    .triage-list { padding-left: 18px; font-size: 12px; color: #cbd5e1; }
+
+    .bottom-grid { display: grid; grid-template-columns: 1.35fr 1fr; gap: 16px; }
+    @media (max-width: 980px) { .bottom-grid { grid-template-columns: 1fr; } }
+
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th, td { text-align: left; padding: 9px 8px; border-bottom: 1px solid var(--border); }
+    th { color: var(--muted); font-weight: 600; font-size: 11px; text-transform: uppercase; }
+    pre.dmed-preview {
+      background: #040b14; border: 1px solid var(--border); border-radius: 10px;
+      padding: 12px; font-size: 11px; color: #7dd3fc; overflow: auto; max-height: 240px;
+    }
+    .tg-card {
+      background: #17212b; border: 1px solid #2b5278; border-radius: 12px; padding: 12px;
+      font-size: 12px; margin-bottom: 10px;
+    }
+    .toast {
+      position: fixed; right: 18px; bottom: 18px; background: #0f172a; color: #fff;
+      border: 1px solid var(--cyan); padding: 11px 16px; border-radius: 10px;
+      font-size: 13px; display: none; z-index: 50; box-shadow: 0 12px 32px rgba(0,0,0,0.45);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-badge">+</div>
+        <div>
+          <h1>AI-Patronaj DMED — Digital Bridge</h1>
+          <p>Задача №10 · ESP32-S3 + AD8232 EKG + MAX30102 + DS18B20 + MQ-135 · HL7 FHIR / DMED Ready</p>
+        </div>
+      </div>
+      <div class="controls">
+        <div class="pill" id="hwPill">
+          <span class="dot demo" id="hwDot"></span>
+          <span id="hwText">Judge Live Demo (ECG + Sensors)</span>
+        </div>
+        <button class="btn-mode" id="netToggleBtn" onclick="toggleNetworkMode()">
+          🔴 OFFLINE REJIM (Qishloq — internet yo'q)
+        </button>
+        <button class="btn-sync" id="syncBtn" onclick="syncToDmed()">
+          🔄 DMED &amp; Shifokorga Sinxronizatsiya (<span id="pendingCountBadge">1</span>)
+        </button>
+      </div>
+    </header>
+
+    <div class="preset-bar">
+      <span><strong>Hakamlar uchun tezkor ssenariy (yoki real ESP32 ulang):</strong></span>
+      <button class="preset-btn active" onclick="setScenario('GREEN', this)">🟢 Yashil (Me'yor)</button>
+      <button class="preset-btn" onclick="setScenario('YELLOW', this)">🟡 Sariq (Isitma + Taxikardiya)</button>
+      <button class="preset-btn" onclick="setScenario('RED', this)">🔴 Qizil (Gipoksiya SpO2 90% + Aritmiya)</button>
+      <span style="margin-left:auto" id="localHint">Local bridge: <code>http://127.0.0.1:8000</code></span>
+    </div>
+
+    <div class="grid-main">
+      <!-- LEFT: LIVE HARDWARE TELEMETRY -->
+      <section class="card">
+        <div class="card-header">
+          <div class="card-title">📈 Jonli Kardiogramma — AD8232 EKG (50 Hz)</div>
+          <span class="badge ok" id="ecgLeadBadge">Elektrodlar ulangan · <span id="ecgMvLabel">1640</span> mV</span>
+        </div>
+        <canvas id="ecgCanvas" width="760" height="220"></canvas>
+
+        <div class="vitals-grid">
+          <div class="vital-box">
+            <div class="vital-label">Puls / SpO2 (MAX30102)</div>
+            <div class="vital-val"><span id="hrVal">76</span> <span style="font-size:14px;color:var(--muted)">BPM</span> · <span id="spo2Val">98</span><span style="font-size:14px;color:var(--muted)">%</span></div>
+            <div class="vital-sub" id="fingerStatus">Barmoq datchikda (IR OK)</div>
+          </div>
+          <div class="vital-box">
+            <div class="vital-label">Tana harorati (DS18B20)</div>
+            <div class="vital-val"><span id="tempVal">36.6</span> <span style="font-size:14px;color:var(--muted)">°C</span></div>
+            <div class="vital-sub">Po'lat tibbiy zond (GPIO 5)</div>
+          </div>
+          <div class="vital-box">
+            <div class="vital-label">Havo / Nafas (MQ-135)</div>
+            <div class="vital-val"><span id="co2Val">445</span> <span style="font-size:14px;color:var(--muted)">ppm</span></div>
+            <div class="vital-sub">Is gazi / nafas anomaliyasi</div>
+          </div>
+        </div>
+
+        <div class="device-mirror">
+          <div style="display:flex;align-items:center;gap:12px;">
+            <div class="led-ring" id="ledMirror"></div>
+            <div>
+              <div style="font-size:13px;font-weight:700;">Apparat RGB Indikatori (ESP32-S3 GPIO 48)</div>
+              <div style="font-size:11px;color:var(--muted);" id="oledStatusText">OLED 0x3C: AI-PATRONAJ · EKG:OK · Z:GREEN</div>
+            </div>
+          </div>
+          <span class="badge">USB Serial / Wi-Fi UDP</span>
+        </div>
+      </section>
+
+      <!-- RIGHT: PATIENT INPUT & OFFLINE AI TRIAGE -->
+      <section class="card">
+        <div class="card-header">
+          <div class="card-title">🧠 Tezkor AI-Triaj va Offline Saqlash</div>
+          <span class="badge">100% Offline Ready</span>
+        </div>
+
+        <div class="form-grid">
+          <input id="pName" value="Karimov Alisher" placeholder="Bemor F.I.Sh" />
+          <input id="pAge" type="number" value="62" placeholder="Yosh" />
+        </div>
+        <div class="form-grid" style="grid-template-columns: 1fr 1fr;">
+          <input id="pMahalla" value="Oqdaryo MFY" placeholder="Mahalla / Qishloq" />
+          <input id="pPinfl" value="31205640110042" placeholder="JShShIR (PINFL)" />
+        </div>
+        <textarea id="pComplaint" placeholder="Hamshira yozuvi / shikoyatlar...">Profilaktik patronaj ko'rigi, ahvoli barqaror.</textarea>
+
+        <button class="btn-ai" onclick="runAiAnalyze()">⚡ Datchiklar + Shikoyatni AI tahlil qilish</button>
+
+        <div class="triage-box" id="triageBox">
+          <div class="triage-zone" id="triageZoneLabel">🟢 YASHIL ZONA — Xavf darajasi: 18%</div>
+          <div class="triage-diag" id="triageDiag">Barqaror holat: hayotiy ko'rsatkichlar va EKG me'yorida.</div>
+          <ul class="triage-list" id="triageInstructions">
+            <li>Rejali profilaktik ko'rik natijasini lokal bazaga saqlang</li>
+            <li>Keyingi patronaj tashrifi sanasini belgilang</li>
+          </ul>
+        </div>
+
+        <div style="margin-top:10px;">
+          <button class="btn-save" onclick="saveOfflinePatient()">💾 Lokal xotiraga saqlash (Offline Queue)</button>
+        </div>
+      </section>
+    </div>
+
+    <div class="bottom-grid">
+      <section class="card">
+        <div class="card-header">
+          <div class="card-title">📋 Patronaj Navbati (Lokal SQLite / Offline Kesh)</div>
+          <span class="badge warn" id="queueSummaryBadge">Kutilmoqda: 1 · Yuborildi: 0</span>
+        </div>
+        <div style="overflow-x:auto;">
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Bemor</th>
+                <th>Puls / SpO2 / °C</th>
+                <th>Zona</th>
+                <th>DMED Holati</th>
+              </tr>
+            </thead>
+            <tbody id="patientsBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-header">
+          <div class="card-title">🏥 Shifokor Telegram-bot &amp; DMED FHIR R4 Paketi</div>
+          <span class="badge">DMED-UZ-MINZDRAV</span>
+        </div>
+        <div class="tg-card" id="tgPreview">
+          <strong>🤖 AI-Patronaj Doctor Bot</strong><br/>
+          <span style="color:var(--muted)">«Sinxronizatsiya» tugmasini bosing — barcha offline kartochkalar tuman shifokoriga va DMED formatiga yuboriladi.</span>
+        </div>
+        <pre class="dmed-preview" id="dmedPreview"></pre>
+      </section>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const BACKEND_URL = "http://127.0.0.1:8000";
+    const STORAGE_KEY = "ai_patronaj_dmed_queue_v1";
+
+    let liveBackendConnected = false;
+    let isOfflineMode = true;
+    let activeScenario = "GREEN";
+    let ecgPhase = 0;
+
+    // 160-point circular ECG buffer
+    const ecgBuffer = new Array(160).fill(2048);
+
+    const SCENARIOS = {
+      GREEN: {
+        hr: 76, spo2: 98, temp: 36.6, co2: 445, ecgLeads: true,
+        complaint: "Profilaktik patronaj ko'rigi, ahvoli barqaror."
+      },
+      YELLOW: {
+        hr: 106, spo2: 94, temp: 38.0, co2: 780, ecgLeads: true,
+        complaint: "Bemor bosh og'rig'i va kechadan beri harorat ko'tarilishidan shikoyat qilyapti."
+      },
+      RED: {
+        hr: 122, spo2: 90, temp: 38.8, co2: 1240, ecgLeads: true,
+        complaint: "Bemor ko'krak qafasida og'riq va nafas qisishidan shikoyat qilyapti."
+      }
+    };
+
+    let currentSensors = {
+      heart_rate_bpm: 76,
+      spo2_percent: 98,
+      temperature_c: 36.6,
+      temp_ok: true,
+      ecg_mv: 1640,
+      ecg_leads_ok: true,
+      air_co2_ppm: 445,
+      finger_on_sensor: true
+    };
+
+    function loadLocalQueue() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) return JSON.parse(raw);
+      } catch (e) {}
+      return [
+        {
+          id: "P-101",
+          patient_name: "Tursunova Malika",
+          patient_age: 67,
+          patient_pinfl: "41508590110018",
+          mahalla: "Oqdaryo MFY",
+          voice_text: "Nafas qisishi va bosim ko'tarilishi",
+          sensors: { heart_rate_bpm: 112, spo2_percent: 91, temperature_c: 37.9, air_co2_ppm: 640, ecg_leads_ok: true },
+          risk_zone: "RED",
+          risk_score: 84,
+          dmed_encounter_id: "DMED-PAT-P-101",
+          sync_status: "pending_sync",
+          created_at: new Date().toISOString()
+        }
+      ];
+    }
+
+    let localQueue = loadLocalQueue();
+    function saveLocalQueue() {
+      try { localStorage.setItem(STORAGE_KEY, JSON.stringify(localQueue)); } catch (e) {}
+    }
+
+    function showToast(msg) {
+      const el = document.getElementById("toast");
+      el.textContent = msg;
+      el.style.display = "block";
+      clearTimeout(window.__toastTimer);
+      window.__toastTimer = setTimeout(() => { el.style.display = "none"; }, 3400);
+    }
+
+    function pqrstSample(t, hr) {
+      const period = 60 / Math.max(45, hr);
+      const p = (t % period) / period;
+      let v = 2048;
+      // P wave
+      v += 95 * Math.exp(-Math.pow((p - 0.16) / 0.032, 2));
+      // Q dip
+      v -= 140 * Math.exp(-Math.pow((p - 0.27) / 0.012, 2));
+      // R spike
+      v += 960 * Math.exp(-Math.pow((p - 0.30) / 0.013, 2));
+      // S dip
+      v -= 260 * Math.exp(-Math.pow((p - 0.335) / 0.014, 2));
+      // T wave
+      v += 210 * Math.exp(-Math.pow((p - 0.50) / 0.048, 2));
+      return Math.round(v + (Math.random() - 0.5) * 24);
+    }
+
+    function drawEcg() {
+      const canvas = document.getElementById("ecgCanvas");
+      const ctx = canvas.getContext("2d");
+      const w = canvas.width;
+      const h = canvas.height;
+
+      ctx.fillStyle = "#040b14";
+      ctx.fillRect(0, 0, w, h);
+
+      // Medical grid
+      ctx.strokeStyle = "rgba(16, 185, 129, 0.12)";
+      ctx.lineWidth = 1;
+      for (let x = 0; x < w; x += 25) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+      }
+      for (let y = 0; y < h; y += 25) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+      }
+
+      // Waveform
+      ctx.strokeStyle = activeScenario === "RED" ? "#ef4444" : (activeScenario === "YELLOW" ? "#f59e0b" : "#10b981");
+      ctx.lineWidth = 2.4;
+      ctx.beginPath();
+      for (let i = 0; i < ecgBuffer.length; i++) {
+        const x = (i / (ecgBuffer.length - 1)) * w;
+        const norm = (ecgBuffer[i] - 1500) / 1800; // map ~1500..3300
+        const y = h - Math.max(0.08, Math.min(0.92, norm)) * h;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+    }
+
+    function setScenario(zone, btn) {
+      activeScenario = zone;
+      document.querySelectorAll(".preset-btn").forEach(b => b.classList.remove("active"));
+      if (btn) btn.classList.add("active");
+      const s = SCENARIOS[zone];
+      currentSensors = {
+        ...currentSensors,
+        heart_rate_bpm: s.hr,
+        spo2_percent: s.spo2,
+        temperature_c: s.temp,
+        air_co2_ppm: s.co2,
+        ecg_leads_ok: s.ecgLeads
+      };
+      document.getElementById("pComplaint").value = s.complaint;
+      runAiAnalyze();
+    }
+
+    function computeTriage(age, complaint, sensors) {
+      let score = 15;
+      const notes = [];
+      if (sensors.spo2_percent > 0 && sensors.spo2_percent < 92) {
+        score += 45; notes.push(`SpO2 kritik past (${sensors.spo2_percent}%)`);
+      } else if (sensors.spo2_percent <= 94) {
+        score += 25; notes.push(`SpO2 pasaygan (${sensors.spo2_percent}%)`);
+      }
+      if (sensors.heart_rate_bpm >= 115 || (sensors.heart_rate_bpm > 0 && sensors.heart_rate_bpm < 50)) {
+        score += 25; notes.push(`puls buzilishi (${sensors.heart_rate_bpm} BPM)`);
+      } else if (sensors.heart_rate_bpm >= 100) {
+        score += 12; notes.push(`yengil taxikardiya (${sensors.heart_rate_bpm} BPM)`);
+      }
+      if (sensors.temperature_c >= 38.5) {
+        score += 22; notes.push(`yuqori isitma (${sensors.temperature_c.toFixed(1)} °C)`);
+      } else if (sensors.temperature_c >= 37.5) {
+        score += 12; notes.push(`subfebril harorat (${sensors.temperature_c.toFixed(1)} °C)`);
+      }
+      if (sensors.air_co2_ppm >= 1100) {
+        score += 18; notes.push(`yuqori gaz/havo anomaliyasi (${sensors.air_co2_ppm} ppm)`);
+      }
+      const txt = (complaint || "").toLowerCase();
+      if (txt.includes("ko'krak") || txt.includes("og'riq") || txt.includes("nafas")) score += 15;
+      if (age >= 60 && score >= 45) score += 8;
+      score = Math.min(100, Math.max(5, score));
+
+      if (score >= 70 || (sensors.spo2_percent > 0 && sensors.spo2_percent < 92)) {
+        return {
+          risk_zone: "RED",
+          risk_score: score,
+          preliminary_diagnosis_uz: "Shoshilinch holat: " + (notes.join(", ") || "og'ir simptomlar"),
+          nurse_instructions_uz: [
+            "Bemorni yarim o'tirgan holatga keltiring va toza havo kirishini ta'minlang",
+            "Qizil xavf kartasini saqlang va aloqa paydo bo'lishi bilan DMED hamda shifokorga yuboring"
+          ]
+        };
+      }
+      if (score >= 40) {
+        return {
+          risk_zone: "YELLOW",
+          risk_score: score,
+          preliminary_diagnosis_uz: "O'rta xavf va kuzatuv zarur: " + (notes.join(", ") || "shikoyatlar mavjud"),
+          nurse_instructions_uz: [
+            "15 daqiqadan so'ng qayta EKG, puls va harorat o'lchovini o'tkazing",
+            "Patronaj kartasini DMED sinxronizatsiyasi orqali oilaviy shifokorga yuboring"
+          ]
+        };
+      }
+      return {
+        risk_zone: "GREEN",
+        risk_score: score,
+        preliminary_diagnosis_uz: "Barqaror holat: hayotiy ko'rsatkichlar va EKG me'yorida.",
+        nurse_instructions_uz: [
+          "Rejali profilaktik ko'rik natijasini lokal bazaga saqlang",
+          "Keyingi patronaj tashrifi sanasini belgilang"
+        ]
+      };
+    }
+
+    let lastAiResult = computeTriage(62, SCENARIOS.GREEN.complaint, currentSensors);
+
+    function renderTriage(res) {
+      lastAiResult = res;
+      const box = document.getElementById("triageBox");
+      box.className = "triage-box " + (res.risk_zone === "GREEN" ? "" : res.risk_zone);
+      const icons = { GREEN: "🟢 YASHIL ZONA", YELLOW: "🟡 SARIQ ZONA", RED: "🔴 QIZIL ZONA" };
+      document.getElementById("triageZoneLabel").textContent = `${icons[res.risk_zone] || res.risk_zone} — Xavf darajasi: ${res.risk_score}%`;
+      document.getElementById("triageDiag").textContent = res.preliminary_diagnosis_uz;
+      document.getElementById("triageInstructions").innerHTML = (res.nurse_instructions_uz || []).map(x => `<li>${x}</li>`).join("");
+
+      const led = document.getElementById("ledMirror");
+      led.className = "led-ring " + (res.risk_zone === "GREEN" ? "" : res.risk_zone);
+      document.getElementById("oledStatusText").textContent =
+        `OLED 0x3C: HR ${currentSensors.heart_rate_bpm} · SpO2 ${currentSensors.spo2_percent}% · ${currentSensors.ecg_leads_ok ? "EKG:OK" : "EKG:OFF"} · Z:${res.risk_zone}`;
+    }
+
+    async function runAiAnalyze() {
+      const age = parseInt(document.getElementById("pAge").value || "0", 10);
+      const complaint = document.getElementById("pComplaint").value || "";
+      if (liveBackendConnected) {
+        try {
+          const r = await fetch(`${BACKEND_URL}/api/ai/analyze`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ patient_age: age, voice_text: complaint, sensors: currentSensors })
+          });
+          if (r.ok) {
+            const data = await r.json();
+            renderTriage(data);
+            updateDmedPreview();
+            return;
+          }
+        } catch (e) {}
+      }
+      renderTriage(computeTriage(age, complaint, currentSensors));
+      updateDmedPreview();
+    }
+
+    function buildDmedJson(rec) {
+      return {
+        system: "DMED-UZ-MINZDRAV",
+        standard: "HL7-FHIR-R4-UZ-PATRONAJ",
+        encounter_id: rec.dmed_encounter_id,
+        recorded_offline_at: rec.created_at,
+        patient: {
+          full_name: rec.patient_name,
+          age_years: rec.patient_age,
+          pinfl_or_temp_id: rec.patient_pinfl
+        },
+        clinical_assessment: {
+          triage_zone: rec.risk_zone,
+          risk_score: rec.risk_score,
+          chief_complaint_uz: rec.voice_text
+        },
+        observations: [
+          { loinc: "8867-4", name: "Heart rate", value: rec.sensors.heart_rate_bpm, unit: "bpm" },
+          { loinc: "2708-6", name: "SpO2", value: rec.sensors.spo2_percent, unit: "%" },
+          { loinc: "8310-5", name: "Body temperature (DS18B20)", value: rec.sensors.temperature_c, unit: "Cel" },
+          { loinc: "11524-6", name: "ECG Waveform (AD8232)", leads_connected: rec.sensors.ecg_leads_ok },
+          { code: "MQ135-BREATH-AIR", name: "Air/Breath (MQ-135)", value: rec.sensors.air_co2_ppm, unit: "ppm" }
+        ]
+      };
+    }
+
+    function updateDmedPreview() {
+      const sample = localQueue[0] || {
+        id: "P-DEMO",
+        patient_name: document.getElementById("pName").value,
+        patient_age: parseInt(document.getElementById("pAge").value || "62", 10),
+        patient_pinfl: document.getElementById("pPinfl").value,
+        mahalla: document.getElementById("pMahalla").value,
+        voice_text: document.getElementById("pComplaint").value,
+        sensors: currentSensors,
+        risk_zone: lastAiResult.risk_zone,
+        risk_score: lastAiResult.risk_score,
+        dmed_encounter_id: "DMED-PAT-P-DEMO",
+        created_at: new Date().toISOString()
+      };
+      document.getElementById("dmedPreview").textContent = JSON.stringify(buildDmedJson(sample), null, 2);
+    }
+
+    function renderQueue() {
+      const tbody = document.getElementById("patientsBody");
+      let pending = 0, synced = 0;
+      tbody.innerHTML = localQueue.map(p => {
+        if (p.sync_status === "pending_sync") pending++; else synced++;
+        const zCls = p.risk_zone === "RED" ? "err" : (p.risk_zone === "YELLOW" ? "warn" : "ok");
+        const sTxt = p.sync_status === "pending_sync" ? "⏳ Offline saqlangan" : "✅ DMED & Shifokor";
+        return `<tr>
+          <td><strong>${p.id}</strong></td>
+          <td>${p.patient_name} (${p.patient_age})<br/><span style="color:var(--muted);font-size:11px">${p.mahalla}</span></td>
+          <td>${p.sensors.heart_rate_bpm} BPM · ${p.sensors.spo2_percent}% · ${Number(p.sensors.temperature_c).toFixed(1)}°C</td>
+          <td><span class="badge ${zCls}">${p.risk_zone}</span></td>
+          <td>${sTxt}</td>
+        </tr>`;
+      }).join("");
+      document.getElementById("pendingCountBadge").textContent = pending;
+      document.getElementById("queueSummaryBadge").textContent = `Kutilmoqda: ${pending} · Yuborildi: ${synced}`;
+      updateDmedPreview();
+    }
+
+    async function saveOfflinePatient() {
+      const payload = {
+        patient_name: document.getElementById("pName").value || "Noma'lum bemor",
+        patient_age: parseInt(document.getElementById("pAge").value || "0", 10),
+        patient_pinfl: document.getElementById("pPinfl").value || "",
+        mahalla: document.getElementById("pMahalla").value || "Qishloq MFY",
+        voice_text: document.getElementById("pComplaint").value || "",
+        sensors: { ...currentSensors },
+        ai_result: lastAiResult
+      };
+
+      if (liveBackendConnected) {
+        try {
+          const r = await fetch(`${BACKEND_URL}/api/patients/save_offline`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload)
+          });
+          if (r.ok) {
+            await fetchBackendPatients();
+            showToast("💾 Lokal SQLite bazaga saqlandi (Offline)");
+            return;
+          }
+        } catch (e) {}
+      }
+
+      const id = "P-" + Math.floor(100 + Math.random() * 899);
+      localQueue.unshift({
+        id,
+        ...payload,
+        risk_zone: lastAiResult.risk_zone,
+        risk_score: lastAiResult.risk_score,
+        dmed_encounter_id: `DMED-PAT-${id}`,
+        sync_status: "pending_sync",
+        created_at: new Date().toISOString()
+      });
+      saveLocalQueue();
+      renderQueue();
+      showToast(`💾 ${id} lokal keshga saqlandi (Offline)`);
+    }
+
+    function toggleNetworkMode() {
+      isOfflineMode = !isOfflineMode;
+      const btn = document.getElementById("netToggleBtn");
+      if (isOfflineMode) {
+        btn.textContent = "🔴 OFFLINE REJIM (Qishloq — internet yo'q)";
+        showToast("Offline rejim yoqildi: ma'lumotlar lokal saqlanadi");
+      } else {
+        btn.textContent = "🟢 ONLINE REJIM (Aloqa mavjud)";
+        showToast("Internet ulandi — sinxronizatsiyaga tayyor!");
+      }
+    }
+
+    async function syncToDmed() {
+      isOfflineMode = false;
+      document.getElementById("netToggleBtn").textContent = "🟢 ONLINE REJIM (Aloqa mavjud)";
+
+      const pendingItems = localQueue.filter(x => x.sync_status === "pending_sync");
+      if (pendingItems.length === 0) {
+        showToast("Yangi offline kartochkalar yo'q — avval bemorni saqlang");
+        return;
+      }
+
+      if (liveBackendConnected) {
+        try {
+          const r = await fetch(`${BACKEND_URL}/api/dmed/sync`, { method: "POST", headers: { "Content-Type": "application/json" }, body: "{}" });
+          if (r.ok) {
+            await fetchBackendPatients();
+          }
+        } catch (e) {}
+      }
+
+      const latest = pendingItems[0];
+      localQueue = localQueue.map(x => ({ ...x, sync_status: "synced" }));
+      saveLocalQueue();
+      renderQueue();
+
+      document.getElementById("tgPreview").innerHTML = `
+        <strong>🚨 ${latest.risk_zone} ZONA — ${latest.id} (DMED: ${latest.dmed_encounter_id})</strong><br/>
+        📍 Hudud: ${latest.mahalla} · 👤 ${latest.patient_name}, ${latest.patient_age} yosh<br/>
+        📊 Puls: ${latest.sensors.heart_rate_bpm} BPM · SpO2: ${latest.sensors.spo2_percent}% · ${Number(latest.sensors.temperature_c).toFixed(1)} °C · EKG: ${latest.sensors.ecg_leads_ok ? "OK" : "OFF"}<br/>
+        <span style="color:#38bdf8">✅ DMED tizimiga va tuman shifokoriga yuborildi!</span>
+      `;
+      showToast(`✅ ${pendingItems.length} ta bemor DMED va Telegram-botga yuborildi!`);
+    }
+
+    async function fetchBackendPatients() {
+      const r = await fetch(`${BACKEND_URL}/api/patients`);
+      if (r.ok) {
+        const d = await r.json();
+        if (Array.isArray(d.patients)) {
+          localQueue = d.patients;
+          renderQueue();
+        }
+      }
+    }
+
+    async function pollTelemetry() {
+      let gotLive = false;
+      try {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 350);
+        const r = await fetch(`${BACKEND_URL}/api/sensors/live`, { signal: ctrl.signal });
+        clearTimeout(t);
+        if (r.ok) {
+          const snap = await r.json();
+          liveBackendConnected = true;
+          if (snap.connected && snap.sensors) {
+            gotLive = true;
+            currentSensors = { ...currentSensors, ...snap.sensors };
+            if (Array.isArray(snap.sensors.ecg_wave) && snap.sensors.ecg_wave.length) {
+              for (const pt of snap.sensors.ecg_wave) {
+                ecgBuffer.push(pt);
+                ecgBuffer.shift();
+              }
+            }
+            document.getElementById("hwDot").className = "dot";
+            document.getElementById("hwText").textContent = `ESP32-S3 Live (${snap.port || snap.transport})`;
+          }
+        }
+      } catch (e) {
+        liveBackendConnected = false;
+      }
+
+      if (!gotLive) {
+        const s = SCENARIOS[activeScenario];
+        const jitterHr = s.hr + Math.round((Math.random() - 0.5) * 3);
+        const jitterCo2 = s.co2 + Math.round((Math.random() - 0.5) * 14);
+        currentSensors.heart_rate_bpm = jitterHr;
+        currentSensors.spo2_percent = s.spo2;
+        currentSensors.temperature_c = s.temp;
+        currentSensors.air_co2_ppm = jitterCo2;
+        currentSensors.ecg_leads_ok = s.ecgLeads;
+
+        for (let i = 0; i < 6; i++) {
+          ecgPhase += 0.02;
+          const pt = pqrstSample(ecgPhase, jitterHr);
+          ecgBuffer.push(pt);
+          ecgBuffer.shift();
+          currentSensors.ecg_mv = Math.round((pt * 3300) / 4095);
+        }
+        document.getElementById("hwDot").className = "dot demo";
+        document.getElementById("hwText").textContent = "Judge Live Demo (ESP32-S3 Simulyatsiya)";
+      }
+
+      document.getElementById("hrVal").textContent = currentSensors.heart_rate_bpm;
+      document.getElementById("spo2Val").textContent = currentSensors.spo2_percent;
+      document.getElementById("tempVal").textContent = Number(currentSensors.temperature_c).toFixed(1);
+      document.getElementById("co2Val").textContent = currentSensors.air_co2_ppm;
+      document.getElementById("ecgMvLabel").textContent = currentSensors.ecg_mv || 1640;
+
+      const leadBadge = document.getElementById("ecgLeadBadge");
+      if (currentSensors.ecg_leads_ok) {
+        leadBadge.className = "badge ok";
+        leadBadge.innerHTML = `Elektrodlar ulangan · <span id="ecgMvLabel">${currentSensors.ecg_mv || 1640}</span> mV`;
+      } else {
+        leadBadge.className = "badge err";
+        leadBadge.innerHTML = `Elektrodlar ulanmagan · <span id="ecgMvLabel">${currentSensors.ecg_mv || 0}</span> mV`;
+      }
+
+      drawEcg();
+    }
+
+    renderQueue();
+    renderTriage(lastAiResult);
+    drawEcg();
+    setInterval(pollTelemetry, 160);
+  </script>
+</body>
+</html>
